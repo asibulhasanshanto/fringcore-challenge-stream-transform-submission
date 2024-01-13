@@ -1,5 +1,4 @@
 import net from "node:net";
-import fs from "node:fs";
 
 const proxyServer = net.createServer();
 
@@ -21,20 +20,19 @@ proxyServer.on("connection", (conn) => {
 
   // read data from server
   const readFromServer = (connectionToMainServer) => {
-    connectionToMainServer.write("c");
+    connectionToMainServer.write("a");
     var buffer = "";
     var startIndex = 0;
     var endIndex = 0;
     connectionToMainServer.on("data", (data) => {
-      // append the data to a temporary file
-      fs.appendFileSync("temp.txt", data.toString());
+     
       buffer += data.toString("utf-8");
 
-      console.log(startIndex);
+     
       // find the exact match of the needle from startIndex to buffer.length and replace it with "- ---- --- ------ --- - ---- ---"
       var searchArea = buffer.substring(startIndex, buffer.length);
       var indices = getIndicesOf(needle, searchArea);
-      console.log(indices);
+      
       if (indices.length > 0) {
         for (var i = 0; i < indices.length; i++) {
           var index = indices[i];
@@ -42,7 +40,7 @@ proxyServer.on("connection", (conn) => {
 
           while (replaceLength > 0) {
             if (searchArea[index] === "\n") {
-              console.log("found line break");
+              
               index++;
               continue;
             } else if (searchArea[index] !== " ") {
@@ -57,7 +55,7 @@ proxyServer.on("connection", (conn) => {
         }
       }
 
-      // console.log(searchArea);
+      
 
       endIndex = buffer.length;
       buffer =
@@ -78,13 +76,12 @@ proxyServer.on("connection", (conn) => {
           );
           if (needle.includes(possiblePartialmatch)) {
             endIndex = buffer.length - possiblePartialmatch.length - 1;
-            // console.log("found", possiblePartialmatch);
+            
             break;
           }
         }
       }
-      // console.log(lastPossibleSubstring);
-
+      
       // endIndex = buffer.length;
       var dataToWrite = buffer.substring(startIndex, endIndex);
       // remove line break from the last line
@@ -109,7 +106,7 @@ proxyServer.on("connection", (conn) => {
 function getIndicesOf(searchStr, str) {
   var lineBreaks = [];
   // find all the line breaks in the  string
-  // console.log(str);
+  
   while (str.indexOf("\n") > -1) {
     var index = str.indexOf("\n");
     lineBreaks.push(index);
@@ -121,14 +118,14 @@ function getIndicesOf(searchStr, str) {
     if (needlesArray.includes(word)) {
       found = true;
     }
-    console.log(word, found);
+    
     if (found) {
       str = str.substring(0, index) + " " + str.substring(index + 1);
     } else {
       str = str.substring(0, index) + str.substring(index + 1);
     }
   }
-  console.log(str);
+ 
 
   var searchStrLen = str.length;
   if (searchStrLen == 0) {
