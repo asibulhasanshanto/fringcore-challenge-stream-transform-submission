@@ -20,30 +20,29 @@ proxyServer.on("connection", (conn) => {
 
   // read data from server
   const readFromServer = (connectionToMainServer) => {
-    connectionToMainServer.write("a");
+    connectionToMainServer.write("a"); //by default writing a
     var buffer = "";
     var startIndex = 0;
     var endIndex = 0;
     connectionToMainServer.on("data", (data) => {
-     
       buffer += data.toString("utf-8");
 
-     
       // find the exact match of the needle from startIndex to buffer.length and replace it with "- ---- --- ------ --- - ---- ---"
       var searchArea = buffer.substring(startIndex, buffer.length);
       var indices = getIndicesOf(needle, searchArea);
-      
+
       if (indices.length > 0) {
         for (var i = 0; i < indices.length; i++) {
           var index = indices[i];
           var replaceLength = needle.length;
 
+          //replace the needle with - in the searchArea ignoring the line breaks
           while (replaceLength > 0) {
             if (searchArea[index] === "\n") {
-              
               index++;
               continue;
             } else if (searchArea[index] !== " ") {
+              //replace only letters with "-"
               searchArea =
                 searchArea.substring(0, index) +
                 "-" +
@@ -55,37 +54,34 @@ proxyServer.on("connection", (conn) => {
         }
       }
 
-      
-
+      // replace the buffer with the modified searchArea
       endIndex = buffer.length;
       buffer =
         buffer.substring(0, startIndex) +
         searchArea +
         buffer.substring(endIndex, buffer.length);
 
-      // 1. Find if there is any partial match in the end of the buffer
+      //  Find if there is any partial match in the end of the buffer
       var lastPossibleSubstring = buffer.substring(
         buffer.length - needle.length - 1,
         buffer.length
       );
       for (var i = 0; i < lastPossibleSubstring.length; i++) {
         if (lastPossibleSubstring[i] === needle[0]) {
+          //if there is a match in the first letter then search for the whole string and set the start index before matched string if found
           var possiblePartialmatch = lastPossibleSubstring.substring(
             i,
             lastPossibleSubstring.length - 1
           );
           if (needle.includes(possiblePartialmatch)) {
             endIndex = buffer.length - possiblePartialmatch.length - 1;
-            
+
             break;
           }
         }
       }
-      
-      // endIndex = buffer.length;
+
       var dataToWrite = buffer.substring(startIndex, endIndex);
-      // remove line break from the last line
-      // dataToWrite = dataToWrite.replace(/\n$/, "");
       startIndex = endIndex;
 
       conn.write(dataToWrite);
@@ -103,14 +99,16 @@ proxyServer.on("connection", (conn) => {
   readFromServer(connectionToMainServer);
 });
 
+// returns all the indices of the needle
 function getIndicesOf(searchStr, str) {
   var lineBreaks = [];
-  // find all the line breaks in the  string
-  
+
+  // remove the line breaks but keep them saved so that they can be added back later
   while (str.indexOf("\n") > -1) {
     var index = str.indexOf("\n");
     lineBreaks.push(index);
-    // take the word before the line break
+    // take the word before the line break and match it with the words in the needle.
+    // if found then we have to put a space after the word. otherwise it would look like "i likebig trains ....."
     var word = str.substring(0, index);
     word = word.split(" ")[word.split(" ").length - 1];
     const needlesArray = needle.split(" ");
@@ -118,17 +116,16 @@ function getIndicesOf(searchStr, str) {
     if (needlesArray.includes(word)) {
       found = true;
     }
-    
+
     if (found) {
       str = str.substring(0, index) + " " + str.substring(index + 1);
     } else {
       str = str.substring(0, index) + str.substring(index + 1);
     }
   }
- 
 
-  var searchStrLen = str.length;
-  if (searchStrLen == 0) {
+  var strLength = str.length;
+  if (strLength == 0) {
     return [];
   }
   var startIndex = 0,
@@ -138,6 +135,7 @@ function getIndicesOf(searchStr, str) {
   str = str.toLowerCase();
   searchStr = searchStr.toLowerCase();
 
+  // find all the possible matches of the needle in the string
   while ((index = str.indexOf(searchStr, startIndex)) > -1) {
     indices.push(index);
     startIndex = index + 1;
